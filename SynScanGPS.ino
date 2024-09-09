@@ -58,12 +58,12 @@ uint8_t uint2bcd(uint8_t ival)
 static char computeChecksum(char* buf, uint16_t len)
 {
   char chksum = 0;
- 
+
   for (uint16_t i = 0; i < len; i++)
   {
     chksum ^= buf[i];
   }
-  
+
   return chksum;
 }
 
@@ -83,7 +83,7 @@ static void synscanEncode(char c)
     {
       // No output
       sendBinaryMsg = false;
-      
+
       // Send ack
       char msg[7] = {'%', '%', '\x06', '\x13', '\x15', '\r', '\n'};
       synscanSendMsg(msg, 7);
@@ -92,12 +92,12 @@ static void synscanEncode(char c)
     {
       // Binary output
       sendBinaryMsg = true;
-      
+
       // Send ack
       char msg[7] = {'%', '%', '\x06', '\x13', '\x15', '\r', '\n'};
       synscanSendMsg(msg, 7);
     }
-    
+
     // Clean buff
     synscanBuffOffset = 0;
   }
@@ -112,17 +112,17 @@ static void synscanSendBinMsg(BinaryMsg *binMsg)
   msg[1] = '%';
   msg[2] = '\xf2';
   msg[3] = '\xd1';
-  
+
   memcpy(msg + 4, binMsg, sizeof(BinaryMsg));
 
   for (uint16_t i = 0; i < size; i++)
   {
     nss.write(msg[i]);
   }
-  
+
   // Checksum
   nss.write(computeChecksum(msg, size));
-  
+
   // End
   nss.write('\r');
   nss.write('\n');
@@ -143,10 +143,10 @@ void setup()
 {
   // Init GPS connexion
   gps.begin(4800);
-  
+
   // Init SynScan connexion
   nss.begin(4800);
-  
+
   pinMode(LEDPIN, OUTPUT);
   digitalWrite(LEDPIN, LOW);
 }
@@ -162,7 +162,7 @@ void loop()
     // Read synscan msg
     synscanEncode(nss.read());
   }
- 
+
   // Read GPS msg
   gps.read();
 
@@ -172,7 +172,7 @@ void loop()
     {
       BinaryMsg binMsg = {0};
       uint8_t tmpBytes[4];
-      
+
       binMsg.weekNo = 0; // not used
       binMsg.timeOfWeek = 0; // not used
 
@@ -224,7 +224,7 @@ void loop()
         // No fix
         digitalWrite(LEDPIN, LOW);
       }
-        
+
       // Synscan ask for GPS data
       if (sendBinaryMsg)
       {
