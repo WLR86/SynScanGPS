@@ -1,6 +1,6 @@
 // SynScan GPS emulator using an Arduino with a GPS
 // Copyright (C) 2014-2020 tazounet
-
+// New version by Weetos
 #include <stdint.h>
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
@@ -49,47 +49,38 @@ bool sendBinaryMsg = false;
 char synscanBuff[BUFF_SIZE] = {0};
 uint8_t synscanBuffOffset = 0;
 
-uint8_t uint2bcd(uint8_t ival)
-{
+uint8_t uint2bcd(uint8_t ival) {
    return ((ival / 10) << 4) | (ival % 10);
 }
 
 // Compute binary message checksum
-static char computeChecksum(char* buf, uint16_t len)
-{
+static char computeChecksum(char* buf, uint16_t len) {
   char chksum = 0;
 
-  for (uint16_t i = 0; i < len; i++)
-  {
+  for (uint16_t i = 0; i < len; i++) {
     chksum ^= buf[i];
   }
 
   return chksum;
 }
 
-static void synscanEncode(char c)
-{
+static void synscanEncode(char c) {
   // Add byte to buffer
-  if (synscanBuffOffset < BUFF_SIZE - 1)
-  {
+  if (synscanBuffOffset < BUFF_SIZE - 1) {
     synscanBuff[synscanBuffOffset] = c;
     synscanBuffOffset++;
   }
 
-  if (c == '\n')
-  {
+  if (c == '\n') {
     // End of command
-    if (strncmp(synscanBuff, "%%\xf1\x13\x00\xe2\r\n", synscanBuffOffset) == 0)
-    {
+    if (strncmp(synscanBuff, "%%\xf1\x13\x00\xe2\r\n", synscanBuffOffset) == 0) {
       // No output
       sendBinaryMsg = false;
 
       // Send ack
       char msg[7] = {'%', '%', '\x06', '\x13', '\x15', '\r', '\n'};
       synscanSendMsg(msg, 7);
-    }
-    else if (strncmp(synscanBuff, "%%\xf1\x13\x03\xe1\r\n", synscanBuffOffset) == 0)
-    {
+    } else if (strncmp(synscanBuff, "%%\xf1\x13\x03\xe1\r\n", synscanBuffOffset) == 0) {
       // Binary output
       sendBinaryMsg = true;
 
@@ -103,8 +94,7 @@ static void synscanEncode(char c)
   }
 }
 
-static void synscanSendBinMsg(BinaryMsg *binMsg)
-{
+static void synscanSendBinMsg(BinaryMsg *binMsg) {
   uint16_t size = 4 + sizeof(BinaryMsg);
   char msg[size];
 
@@ -115,8 +105,7 @@ static void synscanSendBinMsg(BinaryMsg *binMsg)
 
   memcpy(msg + 4, binMsg, sizeof(BinaryMsg));
 
-  for (uint16_t i = 0; i < size; i++)
-  {
+  for (uint16_t i = 0; i < size; i++) {
     nss.write(msg[i]);
   }
 
@@ -128,10 +117,8 @@ static void synscanSendBinMsg(BinaryMsg *binMsg)
   nss.write('\n');
 }
 
-static void synscanSendMsg(char *msg, uint16_t len)
-{
-  for (uint16_t i = 0; i < len; i++)
-  {
+static void synscanSendMsg(char *msg, uint16_t len) {
+  for (uint16_t i = 0; i < len; i++) {
     nss.write(msg[i]);
   }
 }
@@ -139,8 +126,7 @@ static void synscanSendMsg(char *msg, uint16_t len)
 //
 // SETUP
 //
-void setup()
-{
+void setup() {
   // Init GPS connexion
   gps.begin(4800);
 
@@ -154,11 +140,9 @@ void setup()
 //
 // LOOP
 //
-void loop()
-{
+void loop() {
   // Read command from SynScan
-  while (nss.available())
-  {
+  while (nss.available()) {
     // Read synscan msg
     synscanEncode(nss.read());
   }
@@ -166,10 +150,8 @@ void loop()
   // Read GPS msg
   gps.read();
 
-  if (gps.newNMEAreceived())
-  {
-    if (gps.parse(gps.lastNMEA()))
-    {
+  if (gps.newNMEAreceived()) {
+    if (gps.parse(gps.lastNMEA())) {
       BinaryMsg binMsg = {0};
       uint8_t tmpBytes[4];
 
@@ -193,20 +175,19 @@ void loop()
       binMsg.altitude = (int16_t) gps.altitude;
       binMsg.heading = (uint16_t) gps.magvariation;
       binMsg.speed = (uint16_t) gps.speed;
-      switch (gps.fixquality)
-      {
+      switch (gps.fixqualith) {
         case 1 : binMsg.fixIndicator = 0; // GPS
         case 2 : binMsg.fixIndicator = 1; // DGPS
         default : binMsg.fixIndicator = 5; // Invalid
       }
-      if (gps.fix)
-      {
+      if (gps.fix) {
         binMsg.qualityOfFix = gps.fixquality_3d - 1; // 2D fix or 3D fix
-      }
-      else
-      {
+        digitalWrite(LEDPIN, HIGH);
+      } else {
         binMsg.qualityOfFix = 0; // no fix
+        digitalWrite(LEDPIN, LOW);
       }
+
       binMsg.numberOfSv = gps.satellites;
       binMsg.numberOfSvInFix = gps.satellites;
       binMsg.gdop = 1;
@@ -215,21 +196,8 @@ void loop()
       binMsg.vdop = (uint8_t) gps.VDOP;
       binMsg.tdop = 1;
 
-      if (gps.fix)
-      {
-        digitalWrite(LEDPIN, HIGH);
-      }
-      else
-      {
-        // No fix
-        digitalWrite(LEDPIN, LOW);
-      }
-
       // Synscan ask for GPS data
-      if (sendBinaryMsg)
-      {
-        synscanSendBinMsg(&binMsg);
-      }
+      if (sendBinaryMsg) synscanSendBinMsg(&binMsg);
     }
   }
 }
