@@ -184,7 +184,7 @@ void loop() {
       binMsg.altitude = (int16_t) gps.altitude;
       binMsg.heading = (uint16_t) gps.magvariation;
       binMsg.speed = (uint16_t) gps.speed;
-      switch (gps.fixqualith) {
+      switch (gps.fixquality) {
         case 1 : binMsg.fixIndicator = 0; // GPS
         case 2 : binMsg.fixIndicator = 1; // DGPS
         default : binMsg.fixIndicator = 5; // Invalid
