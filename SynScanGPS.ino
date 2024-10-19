@@ -1,6 +1,7 @@
 // SynScan GPS emulator using an Arduino with a GPS
 // Copyright (C) 2014-2020 tazounet
 // New version by Weetos
+
 #include <stdint.h>
 #include <Adafruit_GPS.h>
 #include <SoftwareSerial.h>
@@ -49,6 +50,11 @@ bool sendBinaryMsg = false;
 char synscanBuff[BUFF_SIZE] = {0};
 uint8_t synscanBuffOffset = 0;
 
+#define ACK_SIZE 7
+const char ack[ACK_SIZE] = {'\x25', '\x25', '\x06', '\x13', '\x15', '\x0D', '\x0A'};
+const char noOutput = "\x25\x25\xF1\x13\x00\xE2\x0D\x0A";
+const char binaryOutput = "\x25\x25\xF1\x13\x03\xE1\x0D\x0A";
+
 uint8_t uint2bcd(uint8_t ival) {
    return ((ival / 10) << 4) | (ival % 10);
 }
@@ -71,22 +77,21 @@ static void synscanEncode(char c) {
     synscanBuffOffset++;
   }
 
-  if (c == '\n') {
+  if (c == '\x0A') {
     // End of command
-    if (strncmp(synscanBuff, "%%\xf1\x13\x00\xe2\r\n", synscanBuffOffset) == 0) {
+    if (strncmp(synscanBuff, noOutput, synscanBuffOffset) == 0) {
       // No output
       sendBinaryMsg = false;
 
       // Send ack
-      char msg[7] = {'%', '%', '\x06', '\x13', '\x15', '\r', '\n'};
-      synscanSendMsg(msg, 7);
-    } else if (strncmp(synscanBuff, "%%\xf1\x13\x03\xe1\r\n", synscanBuffOffset) == 0) {
+      synscanSendAck();
+
+    } else if (strncmp(synscanBuff, binaryOutput, synscanBuffOffset) == 0) {
       // Binary output
       sendBinaryMsg = true;
 
       // Send ack
-      char msg[7] = {'%', '%', '\x06', '\x13', '\x15', '\r', '\n'};
-      synscanSendMsg(msg, 7);
+      synscanSendAck();
     }
 
     // Clean buff
@@ -98,8 +103,8 @@ static void synscanSendBinMsg(BinaryMsg *binMsg) {
   uint16_t size = 4 + sizeof(BinaryMsg);
   char msg[size];
 
-  msg[0] = '%';
-  msg[1] = '%';
+  msg[0] = '\x25';
+  msg[1] = '\x25';
   msg[2] = '\xf2';
   msg[3] = '\xd1';
 
@@ -121,6 +126,10 @@ static void synscanSendMsg(char *msg, uint16_t len) {
   for (uint16_t i = 0; i < len; i++) {
     nss.write(msg[i]);
   }
+}
+
+static void synscanSendAck() {
+  synscanSendMsg(ack, ACK_SIZE);
 }
 
 //
