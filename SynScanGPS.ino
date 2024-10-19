@@ -118,8 +118,8 @@ static void synscanSendBinMsg(BinaryMsg *binMsg) {
   nss.write(computeChecksum(msg, size));
 
   // End
-  nss.write('\r');
-  nss.write('\n');
+  nss.write('\x0D');
+  nss.write('\x0A');
 }
 
 static void synscanSendMsg(char *msg, uint16_t len) {
