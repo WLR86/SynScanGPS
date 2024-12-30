@@ -2,7 +2,7 @@
 
 Emulate a SynScan GPS using an Arduino and a cheap GPS
 
-# Hardaware
+# Hardware
 - Arduino Mini
 - 12v -> 5v convertissor
 - RS232/TTL adaptor
