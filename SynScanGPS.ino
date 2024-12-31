@@ -191,6 +191,8 @@ void loop() {
       }
       if (gps.fix) {
         binMsg.qualityOfFix = gps.fixquality_3d - 1; // 2D fix or 3D fix
+		// here we force the indicator value
+		binMsg.fixIndicator = 1; // DGPS
         digitalWrite(LEDPIN, HIGH);
       } else {
         binMsg.qualityOfFix = 0; // no fix
