@@ -1,6 +1,6 @@
 // SynScan GPS emulator using an Arduino with a GPS
 // Copyright (C) 2014-2020 tazounet
-// New Attempt to fix non workign date
+// Revision by Weetos ©2025
 
 #include <stdint.h>
 #include <Adafruit_GPS.h>
@@ -28,7 +28,6 @@ struct BinaryMsg {
   uint8_t  vdop;
   uint8_t  tdop;
 } __attribute__((packed));
-
 
 static void synscanSendBinMsg(BinaryMsg *binMsg);
 
@@ -78,11 +77,9 @@ static void synscanRead(char c)
     synscanBuffOffset++;
   }
 
-  // if byte is \x0A then the sequence is complete, we need to analyze it
   if (c == '\n')
   {
     // End of command
-    // we need to name this string so it makes sense
     if (strncmp(synscanBuff, "%%\xf1\x13\x00\xe2\r\n", synscanBuffOffset) == 0)
     {
       // No output
@@ -203,14 +200,18 @@ void loop()
         case 2 : binMsg.fixIndicator = 1; // DGPS
         default : binMsg.fixIndicator = 5; // Invalid
       }
-      if (gps.fix)
-      {
-        binMsg.qualityOfFix = gps.fixquality_3d - 1; // 2D fix or 3D fix
-      }
-      else
-      {
+
+      if (gps.fix) {
+        // QualityOfFix : 1->2D 2->3D
+        binMsg.qualityOfFix = 2 ;//gps.fixquality_3d - 1; // 2D fix or 3D fix
+        binMsg.fixIndicator = 1; // GPS
+        digitalWrite(LEDPIN, HIGH);
+      } else {
         binMsg.qualityOfFix = 0; // no fix
+        binMsg.fixIndicator = 5;
+        digitalWrite(LEDPIN, LOW);
       }
+
       binMsg.numberOfSv = gps.satellites;
       binMsg.numberOfSvInFix = gps.satellites;
       binMsg.gdop = 1;
@@ -218,16 +219,6 @@ void loop()
       binMsg.hdop = (uint8_t) gps.HDOP;
       binMsg.vdop = (uint8_t) gps.VDOP;
       binMsg.tdop = 1;
-
-      if (gps.fix)
-      {
-        digitalWrite(LEDPIN, HIGH);
-      }
-      else
-      {
-        // No fix
-        digitalWrite(LEDPIN, LOW);
-      }
         
       // Synscan ask for GPS data
       if (sendBinaryMsg)
