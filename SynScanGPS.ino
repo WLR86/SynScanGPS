@@ -1,5 +1,6 @@
 // SynScan GPS emulator using an Arduino with a GPS
 // Copyright (C) 2014-2020 tazounet
+// New Attempt to fix non workign date
 
 #include <stdint.h>
 #include <Adafruit_GPS.h>
@@ -27,6 +28,7 @@ struct BinaryMsg {
   uint8_t  vdop;
   uint8_t  tdop;
 } __attribute__((packed));
+
 
 static void synscanSendBinMsg(BinaryMsg *binMsg);
 
@@ -67,7 +69,8 @@ static char computeChecksum(char* buf, uint16_t len)
   return chksum;
 }
 
-static void synscanEncode(char c)
+
+static void synscanRead(char c)
 {
   // Add byte to buffer
   if (synscanBuffOffset < BUFF_SIZE - 1)
@@ -160,7 +163,7 @@ void loop()
   while (nss.available())
   {
     // Read synscan msg
-    synscanEncode(nss.read());
+    synscanRead(nss.read());
   }
  
   // Read GPS msg
