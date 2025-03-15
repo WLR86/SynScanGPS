@@ -69,7 +69,6 @@ static char computeChecksum(char* buf, uint16_t len)
   return chksum;
 }
 
-
 static void synscanRead(char c)
 {
   // Add byte to buffer
@@ -79,9 +78,11 @@ static void synscanRead(char c)
     synscanBuffOffset++;
   }
 
+  // if byte is \x0A then the sequence is complete, we need to analyze it
   if (c == '\n')
   {
     // End of command
+    // we need to name this string so it makes sense
     if (strncmp(synscanBuff, "%%\xf1\x13\x00\xe2\r\n", synscanBuffOffset) == 0)
     {
       // No output
