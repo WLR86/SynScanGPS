@@ -68,6 +68,12 @@ static char computeChecksum(char* buf, uint16_t len)
   return chksum;
 }
 
+static void sendAck()
+{
+      char msg[] = {'\x25', '\x25', '\x06', '\x13', '\x15', '\x0D', '\x0A'};
+      synscanSendMsg(msg, sizeof(msg));
+}
+
 static void synscanRead(char c)
 {
   // Add byte to buffer
@@ -80,23 +86,22 @@ static void synscanRead(char c)
   if (c == '\n')
   {
     // End of command
-    if (strncmp(synscanBuff, "%%\xf1\x13\x00\xe2\r\n", synscanBuffOffset) == 0)
+    if (strncmp(synscanBuff, "\x25\x25\xf1\x13\x00\xe2\x0D\x0A", synscanBuffOffset) == 0)
     {
       // No output
       sendBinaryMsg = false;
       
       // Send ack
-      char msg[7] = {'%', '%', '\x06', '\x13', '\x15', '\r', '\n'};
-      synscanSendMsg(msg, 7);
+      sendAck();
     }
-    else if (strncmp(synscanBuff, "%%\xf1\x13\x03\xe1\r\n", synscanBuffOffset) == 0)
+    else if (strncmp(synscanBuff, "\x25\x25\xF1\x13\x03\xE1\x0D\x0A", synscanBuffOffset) == 0)
+
     {
       // Binary output
       sendBinaryMsg = true;
       
       // Send ack
-      char msg[7] = {'%', '%', '\x06', '\x13', '\x15', '\r', '\n'};
-      synscanSendMsg(msg, 7);
+      sendAck();
     }
     
     // Clean buff
@@ -109,10 +114,10 @@ static void synscanSendBinMsg(BinaryMsg *binMsg)
   uint16_t size = 4 + sizeof(BinaryMsg);
   char msg[size];
 
-  msg[0] = '%';
-  msg[1] = '%';
-  msg[2] = '\xf2';
-  msg[3] = '\xd1';
+  msg[0] = '\x25';
+  msg[1] = '\x25';
+  msg[2] = '\xF2';
+  msg[3] = '\xD1';
   
   memcpy(msg + 4, binMsg, sizeof(BinaryMsg));
 
@@ -125,8 +130,8 @@ static void synscanSendBinMsg(BinaryMsg *binMsg)
   nss.write(computeChecksum(msg, size));
   
   // End
-  nss.write('\r');
-  nss.write('\n');
+  nss.write('\x0D');
+  nss.write('\x0A');
 }
 
 static void synscanSendMsg(char *msg, uint16_t len)
